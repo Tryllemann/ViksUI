@@ -20,10 +20,8 @@ T.ChatSetup = function()
 			frame:ClearAllPoints()
 			frame:SetWidth(LChat:GetWidth()-8)
 			frame:SetHeight(LChat:GetHeight()-8)
-			if not frame:IsPointSet() then
-				frame:SetPoint("BOTTOMLEFT",LChat,"BOTTOMLEFT",4,6)
-				frame:SetPoint("TOPRIGHT",LChat,"TOPRIGHT",-4,-2)
-			end
+			frame:SetPoint("BOTTOMLEFT",LChat,"BOTTOMLEFT",4,6)
+			frame:SetPoint("TOPRIGHT",LChat,"TOPRIGHT",-4,-2)
 		elseif id == 2 then
 			FCF_SetWindowName(frame, GUILD_EVENT_LOG)
 		elseif id == 3 then
@@ -34,10 +32,8 @@ T.ChatSetup = function()
 			frame:ClearAllPoints()
 			frame:SetWidth(RChat:GetWidth()-8)
 			frame:SetHeight(RChat:GetHeight()-8)
-			if not frame:IsPointSet() then
-				frame:SetPoint("BOTTOMLEFT",RChat,"BOTTOMLEFT",4,4)
-				frame:SetPoint("TOPRIGHT",RChat,"TOPRIGHT",-4,-2)
-			end
+			frame:SetPoint("BOTTOMLEFT",RChat,"BOTTOMLEFT",4,4)
+			frame:SetPoint("TOPRIGHT",RChat,"TOPRIGHT",-4,-2)
 			FCF_SetWindowName(frame, LOOT..' / '..TRADE)
 		end
 
