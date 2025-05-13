@@ -106,13 +106,24 @@ local function OnEnter(self)
         )
     end
 
-    -- Instructions
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddDoubleLine("Left Click:", "Open Profession page", 1, 1, 1, 1, 1, 0)
-    GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
-    GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
-    GameTooltip:AddDoubleLine("Control + Right Click:", "Open Fishing", 1, 1, 1, 1, 1, 0)
-    GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
+	-- Add dynamic tooltips for LeftButton and RightButton
+	GameTooltip:AddLine(" ")
+	if prof1 then
+		GameTooltip:AddDoubleLine("Left Click:", string.format("Open %s", select(1, GetProfessionInfo(prof1))), 1, 1, 1, 1, 1, 0)
+	end
+	if prof2 then
+		GameTooltip:AddDoubleLine("Right Click:", string.format("Open %s", select(1, GetProfessionInfo(prof2))), 1, 1, 1, 1, 1, 0)
+	end
+	if archy then
+		GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
+	end
+	if cooking then
+		GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
+	end
+	if fishing then
+		GameTooltip:AddDoubleLine("Control + Right Click:", "Open Fishing", 1, 1, 1, 1, 1, 0)
+	end
+	GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
     GameTooltip:Show()
 end
 
