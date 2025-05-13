@@ -10,6 +10,7 @@ end
 local GetProfessionInfo = _G["GetProfessionInfo"]
 local GetProfessions = _G["GetProfessions"]
 local C_TradeSkillUI = _G["C_TradeSkillUI"]
+local GameTooltip = _G["GameTooltip"]
 local Utils = {} -- Utility table for helper functions
 
 -- Utility Functions
@@ -24,13 +25,32 @@ end
 function Utils.CacheProfession(professionID, professions)
     if not professionID then return end
     local name, texture, rank, maxRank = GetProfessionInfo(professionID)
+	if not name then return end -- Skip invalid professions
     if name then
-        table.insert(professions, { name = name, texture = texture, rank = rank, maxRank = maxRank })
+        professions[#professions + 1] = {
+            name = name,
+            texture = texture,
+            rank = rank,
+            maxRank = maxRank
+        }
     end
 end
 
 function Utils.SortProfessions(professions)
     table.sort(professions, function(a, b) return a.name < b.name end)
+end
+
+function Utils.AddProfessionsToTooltip(professions)
+    if #professions == 0 then return end
+    Utils.SortProfessions(professions)
+
+    for _, profession in ipairs(professions) do
+        GameTooltip:AddDoubleLine(
+            string.format("|T%s:12:12:1:0|t  %s", profession.texture, profession.name),
+            string.format("%d / %d", profession.rank, profession.maxRank),
+            1, 1, 1, 1, 1, 1
+        )
+    end
 end
 
 -- UI Setup
@@ -42,6 +62,7 @@ local function SetupStatFrame()
 
     local Text = Stat:CreateFontString(nil, "OVERLAY")
     Stat.text = Text
+
     if C.datatext.Profession >= 9 then
         Text:SetTextColor(unpack(C.media.pxcolor1))
         Text:SetFont(C.media.pxfontHeader, C.media.pxfontHsize, C.media.pxfontHFlag)
@@ -49,6 +70,7 @@ local function SetupStatFrame()
         Text:SetTextColor(unpack(C.media.pxcolor1))
         Text:SetFont(C.media.pixel_font, C.media.pixel_font_size, C.media.pixel_font_style)
     end
+
     PP(C.datatext.Profession, Text)
     return Stat, Text
 end
@@ -91,39 +113,38 @@ local function OnEnter(self)
     Utils.CacheProfession(archy, professions)
     Utils.CacheProfession(fishing, professions)
     Utils.CacheProfession(cooking, professions)
-
-    if #professions == 0 then return end
-    Utils.SortProfessions(professions)
-
-    -- Tooltip setup
+    
+	-- Tooltip setup
     GameTooltip:SetOwner(self, "ANCHOR_TOP", -20, 6)
     GameTooltip:ClearLines()
-    for _, profession in ipairs(professions) do
-        GameTooltip:AddDoubleLine(
-            string.format("|T%s:12:12:1:0|t  %s", profession.texture, profession.name),
-            string.format("%d / %d", profession.rank, profession.maxRank),
-            1, 1, 1, 1, 1, 1
-        )
+    if #professions == 0 then
+        -- Debug: No professions found
+        print("No professions found")
+        GameTooltip:AddLine("No professions available.", 1, 0.5, 0.5)
+    else
+        -- Add professions to tooltip
+        Utils.AddProfessionsToTooltip(professions)
     end
 
-	-- Add dynamic tooltips for LeftButton and RightButton
-	GameTooltip:AddLine(" ")
-	if prof1 then
-		GameTooltip:AddDoubleLine("Left Click:", string.format("Open %s", select(1, GetProfessionInfo(prof1))), 1, 1, 1, 1, 1, 0)
-	end
-	if prof2 then
-		GameTooltip:AddDoubleLine("Right Click:", string.format("Open %s", select(1, GetProfessionInfo(prof2))), 1, 1, 1, 1, 1, 0)
-	end
-	if archy then
-		GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
-	end
-	if cooking then
-		GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
-	end
-	if fishing then
-		GameTooltip:AddDoubleLine("Control + Right Click:", "Open Fishing", 1, 1, 1, 1, 1, 0)
-	end
-	GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
+    -- Add dynamic tooltips
+    GameTooltip:AddLine(" ")
+    if prof1 then
+        GameTooltip:AddDoubleLine("Left Click:", string.format("Open %s", select(1, GetProfessionInfo(prof1))), 1, 1, 1, 1, 1, 0)
+    end
+    if prof2 then
+        GameTooltip:AddDoubleLine("Right Click:", string.format("Open %s", select(1, GetProfessionInfo(prof2))), 1, 1, 1, 1, 1, 0)
+    end
+    if archy then
+        GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
+    end
+    if cooking then
+        GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
+    end
+    if fishing then
+        GameTooltip:AddDoubleLine("Control + Right Click:", "Open Fishing", 1, 1, 1, 1, 1, 0)
+    end
+    GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
+
     GameTooltip:Show()
 end
 
