@@ -94,87 +94,51 @@ if C.datatext.Profession and C.datatext.Profession > 0 then
 		local prof1, prof2, archy, fishing, cooking = GetProfessions()
 		local professions = {}
 
-		if prof1 then
-			local name, texture, rank, maxRank = select(1, GetProfessionInfo(prof1))
-			professions[#professions + 1] = {
-				name = name,
-				texture = texture,
-				rank = rank,
-				maxRank = maxRank
-			}
+		-- Cache GetProfessionInfo results
+		local function cacheProfession(professionID)
+			if professionID then
+				local name, texture, rank, maxRank = GetProfessionInfo(professionID)
+				if name then
+					professions[#professions + 1] = {
+						name = name,
+						texture = texture,
+						rank = rank,
+						maxRank = maxRank,
+					}
+				end
+			end
 		end
 
-		if prof2 then
-			local name, texture, rank, maxRank = select(1, GetProfessionInfo(prof2))
-			professions[#professions + 1] = {
-				name = name,
-				texture = texture,
-				rank = rank,
-				maxRank = maxRank
-			}
-		end
-
-		if archy then
-			local name, texture, rank, maxRank = select(1, GetProfessionInfo(archy))
-			professions[#professions + 1] = {
-				name = name,
-				texture = texture,
-				rank = rank,
-				maxRank = maxRank
-			}
-		end
-
-		if fishing then
-			local name, texture, rank, maxRank = select(1, GetProfessionInfo(fishing))
-			professions[#professions + 1] = {
-				name = name,
-				texture = texture,
-				rank = rank,
-				maxRank = maxRank
-			}
-		end
-
-		if cooking then
-			local name, texture, rank, maxRank = select(1, GetProfessionInfo(cooking))
-			professions[#professions + 1] = {
-				name = name,
-				texture = texture,
-				rank = rank,
-				maxRank = maxRank
-			}
-		end
+		-- Cache each profession
+		cacheProfession(prof1)
+		cacheProfession(prof2)
+		cacheProfession(archy)
+		cacheProfession(fishing)
+		cacheProfession(cooking)
 
 		if #professions == 0 then return end
 		sort(professions, function(a, b) return a.name < b.name end)
 
 		GameTooltip:SetOwner(self, "ANCHOR_TOP", -20, 6)
-		GameTooltip:ClearAllPoints()
-		GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
-		GameTooltip:ClearLines()
+		GameTooltip:ClearLines() -- Clear lines only once
 
-		for i = 1, #professions do
+		-- Add sorted professions to the tooltip
+		for _, profession in ipairs(professions) do
 			GameTooltip:AddDoubleLine(
-				join("", "|T", professions[i].texture, ":12:12:1:0|t  ", professions[i].name),
-				join("", professions[i].rank, " / ", professions[i].maxRank),
+				string.format("|T%s:12:12:1:0|t  %s", profession.texture, profession.name),
+				string.format("%d / %d", profession.rank, profession.maxRank),
 				1, 1, 1, 1, 1, 1
 			)
 		end
 
+		-- Add instructions
 		GameTooltip:AddLine(" ")
-
-		-- Include mouse button instructions, including RightButton
 		GameTooltip:AddDoubleLine("Left Click:", "Open Profession page", 1, 1, 1, 1, 1, 0)
 		GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
 		GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
-		-- Add RightButton-specific tooltip, based on available professions
-		if prof2 then
-			local name = select(1, GetProfessionInfo(prof2))
-			GameTooltip:AddDoubleLine("Right Click:", "Open " .. name, 1, 1, 1, 1, 1, 0)
-		else
-			GameTooltip:AddDoubleLine("Right Click:", "No secondary profession available", 1, 1, 1, 1, 1, 0)
-		end
 		GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
 
+		-- Show tooltip
 		GameTooltip:Show()
 	end
 
