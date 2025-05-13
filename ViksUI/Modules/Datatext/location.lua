@@ -7,6 +7,7 @@ if not C.datatext.location or C.datatext.location <= 0 then return end
 local Stat = CreateFrame("Frame", "DataTextLocation", UIParent)
 Stat:SetFrameStrata("BACKGROUND")
 Stat:SetFrameLevel(3)
+Stat:EnableMouse(true)
 
 -- Create the FontString for displaying location information
 local Text = Stat:CreateFontString(nil, "OVERLAY")
@@ -18,6 +19,28 @@ Text:SetFont(
 )
 
 PP(C.datatext.location, Text)
+
+-- UI Setup
+local function SetupStatFrame()
+    local Stat = CreateFrame("Frame", "DataTextLocation", UIParent)
+    Stat:EnableMouse(true)
+    Stat:SetFrameStrata("BACKGROUND")
+    Stat:SetFrameLevel(3)
+
+    local Text = Stat:CreateFontString(nil, "OVERLAY")
+    Stat.text = Text
+
+    if C.datatext.location >= 9 then
+        Text:SetTextColor(unpack(C.media.pxcolor1))
+        Text:SetFont(C.media.pxfontHeader, C.media.pxfontHsize, C.media.pxfontHFlag)
+    else
+        Text:SetTextColor(unpack(C.media.pxcolor1))
+        Text:SetFont(C.media.pixel_font, C.media.pixel_font_size, C.media.pixel_font_style)
+    end
+
+    PP(C.datatext.location, Text)
+    return Stat, Text
+end
 
 -- Function to determine zone coloring based on PVP type
 local function GetZoneColor()
@@ -88,6 +111,42 @@ local function Update(self, elapsed)
         end
     end
 end
+
+-- Add this section to enable tooltip functionality
+local function OnEnter(self)
+    local subZoneText = GetMinimapZoneText() or ""
+    local zoneText = _G.GetRealZoneText() or _G.UNKNOWN
+    local pvpType = GetZonePVPInfo() or "unknown"
+    local _, instanceType = IsInInstance()
+
+    GameTooltip:SetOwner(self, "ANCHOR_TOP", -20, 6)
+    GameTooltip:ClearLines()
+    GameTooltip:AddLine("Location Details", 1, 1, 1)
+    GameTooltip:AddLine(" ")
+
+    GameTooltip:AddDoubleLine("Zone:", zoneText, 1, 1, 1, 0.9, 0.9, 0.9)
+    GameTooltip:AddDoubleLine("Sub-zone:", subZoneText, 1, 1, 1, 0.9, 0.9, 0.9)
+    GameTooltip:AddDoubleLine("PVP Type:", pvpType, 1, 1, 1, 0.9, 0.9, 0.9)
+
+    if instanceType and (instanceType == "raid" or instanceType == "party") then
+        GameTooltip:AddDoubleLine("Instance Type:", instanceType, 1, 1, 1, 0.9, 0.9, 0.9)
+    else
+        local unitMap = C_Map.GetBestMapForUnit("player")
+        local x, y = GetPlayerMapPosition(unitMap)
+        x, y = math.floor(100 * x), math.floor(100 * y)
+        GameTooltip:AddDoubleLine("Coordinates:", string.format("%d, %d", x, y), 1, 1, 1, 0.9, 0.9, 0.9)
+    end
+
+    GameTooltip:Show()
+end
+
+local function OnLeave(self)
+    GameTooltip:Hide()
+end
+
+-- Attach tooltip handlers to the Stat frame
+Stat:SetScript("OnEnter", OnEnter)
+Stat:SetScript("OnLeave", OnLeave)
 
 -- Set the OnUpdate script for the Stat frame
 Stat:SetScript("OnUpdate", Update)
