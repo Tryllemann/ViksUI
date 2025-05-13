@@ -76,6 +76,15 @@ if C.datatext.Profession and C.datatext.Profession > 0 then
 						C_TradeSkillUI.OpenTradeSkill(skillLineID) -- Open the Cooking frame
 					end
 				end
+			elseif IsControlKeyDown() and fishing then
+				local _, _, _, _, _, _, skillLineID = GetProfessionInfo(fishing)
+				if skillLineID then
+					if isTradeSkillFrameOpen then
+						C_TradeSkillUI.CloseTradeSkill() -- Close the frame if it's open
+					else
+						C_TradeSkillUI.OpenTradeSkill(skillLineID) -- Open the Fishing frame
+					end
+				end
 			elseif prof2 then
 				local _, _, _, _, _, _, skillLineID = GetProfessionInfo(prof2)
 				if skillLineID then
@@ -136,6 +145,7 @@ if C.datatext.Profession and C.datatext.Profession > 0 then
 		GameTooltip:AddDoubleLine("Left Click:", "Open Profession page", 1, 1, 1, 1, 1, 0)
 		GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
 		GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
+		GameTooltip:AddDoubleLine("Control + Right Click:", "Open Fishing", 1, 1, 1, 1, 1, 0)
 		GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
 
 		-- Show tooltip
