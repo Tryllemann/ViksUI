@@ -34,119 +34,149 @@ if C.datatext.Profession and C.datatext.Profession > 0 then
     end
 
     -- OnMouseDown function to handle clicks
-    local function Click(self, button)
-        local prof1, prof2, archy, fishing, cooking = GetProfessions()
-        
-        if button == "LeftButton" then
-            if IsControlKeyDown() then
-                ToggleProfessionsBook() -- Open the professions book when Control + LeftButton is clicked
-            elseif IsShiftKeyDown() and archy then
-                local _, _, _, _, _, _, skillLineID = GetProfessionInfo(archy)
-                if skillLineID then
-                    C_TradeSkillUI.OpenTradeSkill(skillLineID)
-                end
-            elseif prof1 then
-                local _, _, _, _, _, _, skillLineID = GetProfessionInfo(prof1)
-                if skillLineID then
-                    C_TradeSkillUI.OpenTradeSkill(skillLineID)
-                end
-            else
-                ToggleProfessionsBook()
-            end
-        elseif button == "RightButton" then
-            if IsShiftKeyDown() and cooking then
-                local _, _, _, _, _, _, skillLineID = GetProfessionInfo(cooking)
-                if skillLineID then
-                    C_TradeSkillUI.OpenTradeSkill(skillLineID)
-                end
-            elseif prof2 then
-                local _, _, _, _, _, _, skillLineID = GetProfessionInfo(prof2)
-                if skillLineID then
-                    C_TradeSkillUI.OpenTradeSkill(skillLineID)
-                end
-            end
-        end
-    end
+	local function Click(self, button)
+		local prof1, prof2, archy, fishing, cooking = GetProfessions()
+		local isTradeSkillFrameOpen = C_TradeSkillUI.IsTradeSkillLinked() or C_TradeSkillUI.IsTradeSkillReady() -- Check if the TradeSkill frame is open
+
+		if button == "LeftButton" then
+			if IsControlKeyDown() then
+				if isTradeSkillFrameOpen then
+					C_TradeSkillUI.CloseTradeSkill() -- Close the frame if it's open
+				else
+					ToggleProfessionsBook() -- Open the professions book
+				end
+			elseif IsShiftKeyDown() and archy then
+				local _, _, _, _, _, _, skillLineID = GetProfessionInfo(archy)
+				if skillLineID then
+					if isTradeSkillFrameOpen then
+						C_TradeSkillUI.CloseTradeSkill() -- Close the frame if it's open
+					else
+						C_TradeSkillUI.OpenTradeSkill(skillLineID) -- Open the Archaeology frame
+					end
+				end
+			elseif prof1 then
+				local _, _, _, _, _, _, skillLineID = GetProfessionInfo(prof1)
+				if skillLineID then
+					if isTradeSkillFrameOpen then
+						C_TradeSkillUI.CloseTradeSkill() -- Close the frame if it's open
+					else
+						C_TradeSkillUI.OpenTradeSkill(skillLineID) -- Open the primary profession frame
+					end
+				end
+			else
+				ToggleProfessionsBook()
+			end
+		elseif button == "RightButton" then
+			if IsShiftKeyDown() and cooking then
+				local _, _, _, _, _, _, skillLineID = GetProfessionInfo(cooking)
+				if skillLineID then
+					if isTradeSkillFrameOpen then
+						C_TradeSkillUI.CloseTradeSkill() -- Close the frame if it's open
+					else
+						C_TradeSkillUI.OpenTradeSkill(skillLineID) -- Open the Cooking frame
+					end
+				end
+			elseif prof2 then
+				local _, _, _, _, _, _, skillLineID = GetProfessionInfo(prof2)
+				if skillLineID then
+					if isTradeSkillFrameOpen then
+						C_TradeSkillUI.CloseTradeSkill() -- Close the frame if it's open
+					else
+						C_TradeSkillUI.OpenTradeSkill(skillLineID) -- Open the secondary profession frame
+					end
+				end
+			end
+		end
+	end
 
     -- OnEnter function for tooltip
-    local function OnEnter(self)
-        local prof1, prof2, archy, fishing, cooking = GetProfessions()
-        local professions = {}
+	local function OnEnter(self)
+		local prof1, prof2, archy, fishing, cooking = GetProfessions()
+		local professions = {}
 
-        if prof1 then
-            local name, texture, rank, maxRank = select(1, GetProfessionInfo(prof1))
-            professions[#professions + 1] = {
-                name = name,
-                texture = texture,
-                rank = rank,
-                maxRank = maxRank
-            }
-        end
+		if prof1 then
+			local name, texture, rank, maxRank = select(1, GetProfessionInfo(prof1))
+			professions[#professions + 1] = {
+				name = name,
+				texture = texture,
+				rank = rank,
+				maxRank = maxRank
+			}
+		end
 
-        if prof2 then
-            local name, texture, rank, maxRank = select(1, GetProfessionInfo(prof2))
-            professions[#professions + 1] = {
-                name = name,
-                texture = texture,
-                rank = rank,
-                maxRank = maxRank
-            }
-        end
+		if prof2 then
+			local name, texture, rank, maxRank = select(1, GetProfessionInfo(prof2))
+			professions[#professions + 1] = {
+				name = name,
+				texture = texture,
+				rank = rank,
+				maxRank = maxRank
+			}
+		end
 
-        if archy then
-            local name, texture, rank, maxRank = select(1, GetProfessionInfo(archy))
-            professions[#professions + 1] = {
-                name = name,
-                texture = texture,
-                rank = rank,
-                maxRank = maxRank
-            }
-        end
+		if archy then
+			local name, texture, rank, maxRank = select(1, GetProfessionInfo(archy))
+			professions[#professions + 1] = {
+				name = name,
+				texture = texture,
+				rank = rank,
+				maxRank = maxRank
+			}
+		end
 
-        if fishing then
-            local name, texture, rank, maxRank = select(1, GetProfessionInfo(fishing))
-            professions[#professions + 1] = {
-                name = name,
-                texture = texture,
-                rank = rank,
-                maxRank = maxRank
-            }
-        end
+		if fishing then
+			local name, texture, rank, maxRank = select(1, GetProfessionInfo(fishing))
+			professions[#professions + 1] = {
+				name = name,
+				texture = texture,
+				rank = rank,
+				maxRank = maxRank
+			}
+		end
 
-        if cooking then
-            local name, texture, rank, maxRank = select(1, GetProfessionInfo(cooking))
-            professions[#professions + 1] = {
-                name = name,
-                texture = texture,
-                rank = rank,
-                maxRank = maxRank
-            }
-        end
+		if cooking then
+			local name, texture, rank, maxRank = select(1, GetProfessionInfo(cooking))
+			professions[#professions + 1] = {
+				name = name,
+				texture = texture,
+				rank = rank,
+				maxRank = maxRank
+			}
+		end
 
-        if #professions == 0 then return end
-        sort(professions, function(a, b) return a.name < b.name end)
+		if #professions == 0 then return end
+		sort(professions, function(a, b) return a.name < b.name end)
 
-        GameTooltip:SetOwner(self, "ANCHOR_TOP", -20, 6)
-        GameTooltip:ClearAllPoints()
-        GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
-        GameTooltip:ClearLines()
+		GameTooltip:SetOwner(self, "ANCHOR_TOP", -20, 6)
+		GameTooltip:ClearAllPoints()
+		GameTooltip:SetPoint("BOTTOM", self, "TOP", 0, 1)
+		GameTooltip:ClearLines()
 
-        for i = 1, #professions do
-            GameTooltip:AddDoubleLine(
-                join("", "|T", professions[i].texture, ":12:12:1:0|t  ", professions[i].name),
-                join("", professions[i].rank, " / ", professions[i].maxRank),
-                1, 1, 1, 1, 1, 1
-            )
-        end
+		for i = 1, #professions do
+			GameTooltip:AddDoubleLine(
+				join("", "|T", professions[i].texture, ":12:12:1:0|t  ", professions[i].name),
+				join("", professions[i].rank, " / ", professions[i].maxRank),
+				1, 1, 1, 1, 1, 1
+			)
+		end
 
-        GameTooltip:AddLine(" ")
-        GameTooltip:AddDoubleLine("Left Click:", "Open Profession page", 1, 1, 1, 1, 1, 0)
-        GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
-        GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
-        GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0) -- Added tooltip for Control + LeftButton
+		GameTooltip:AddLine(" ")
 
-        GameTooltip:Show()
-    end
+		-- Include mouse button instructions, including RightButton
+		GameTooltip:AddDoubleLine("Left Click:", "Open Profession page", 1, 1, 1, 1, 1, 0)
+		GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
+		GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
+		-- Add RightButton-specific tooltip, based on available professions
+		if prof2 then
+			local name = select(1, GetProfessionInfo(prof2))
+			GameTooltip:AddDoubleLine("Right Click:", "Open " .. name, 1, 1, 1, 1, 1, 0)
+		else
+			GameTooltip:AddDoubleLine("Right Click:", "No secondary profession available", 1, 1, 1, 1, 1, 0)
+		end
+		GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
+
+		GameTooltip:Show()
+	end
 
     -- OnLeave function to hide tooltip
     local function OnLeave(self)
