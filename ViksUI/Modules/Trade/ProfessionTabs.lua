@@ -1,143 +1,307 @@
--- Professions.lua
 local T, C, L = unpack(ViksUI)
+if C.trade.profession_tabs ~= true then return end
 
--- Ensure the module is enabled
-if not (C.datatext.Profession and C.datatext.Profession > 0) then
-    return
-end
+----------------------------------------------------------------------------------------
+--	Professions tabs on tradeskill frame(ProfessionTabs by Beoko)
+----------------------------------------------------------------------------------------
+local tabs, spells = {}, {}
 
--- Constants and Utilities
-local GetProfessionInfo = _G["GetProfessionInfo"]
-local GetProfessions = _G["GetProfessions"]
-local C_TradeSkillUI = _G["C_TradeSkillUI"]
-local Utils = {} -- Utility table for helper functions
+local handler = CreateFrame("Frame")
+handler:SetScript("OnEvent", function(self, event) self[event](self, event) end)
+handler:RegisterEvent("TRADE_SKILL_SHOW")
+handler:RegisterEvent("TRADE_SKILL_CLOSE")
+handler:RegisterEvent("TRADE_SHOW")
+handler:RegisterEvent("SKILL_LINES_CHANGED")
+handler:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
 
--- Utility Functions
-function Utils.ToggleTradeSkill(skillLineID)
-    if C_TradeSkillUI.IsTradeSkillReady() or C_TradeSkillUI.IsTradeSkillLinked() then
-        C_TradeSkillUI.CloseTradeSkill()
-    else
-        C_TradeSkillUI.OpenTradeSkill(skillLineID)
-    end
-end
+local function FilterIcons()
+	local buttonList = {
+		[1] = {"Professions-Icon-Skill-High", TRADESKILL_FILTER_HAS_SKILL_UP, C_TradeSkillUI.GetOnlyShowSkillUpRecipes, C_TradeSkillUI.SetOnlyShowSkillUpRecipes},
+		[2] = {"Interface\\RAIDFRAME\\ReadyCheck-Ready", CRAFT_IS_MAKEABLE, C_TradeSkillUI.GetOnlyShowMakeableRecipes, C_TradeSkillUI.SetOnlyShowMakeableRecipes},
+	}
 
-function Utils.CacheProfession(professionID, professions)
-    if not professionID then return end
-    local name, texture, rank, maxRank = GetProfessionInfo(professionID)
-    if name then
-        table.insert(professions, { name = name, texture = texture, rank = rank, maxRank = maxRank })
-    end
-end
-
-function Utils.SortProfessions(professions)
-    table.sort(professions, function(a, b) return a.name < b.name end)
-end
-
--- UI Setup
-local function SetupStatFrame()
-    local Stat = CreateFrame("Frame", "DataTextProfession", UIParent)
-    Stat:EnableMouse(true)
-    Stat:SetFrameStrata("BACKGROUND")
-    Stat:SetFrameLevel(3)
-
-    local Text = Stat:CreateFontString(nil, "OVERLAY")
-    Stat.text = Text
-    if C.datatext.Profession >= 9 then
-        Text:SetTextColor(unpack(C.media.pxcolor1))
-        Text:SetFont(C.media.pxfontHeader, C.media.pxfontHsize, C.media.pxfontHFlag)
-    else
-        Text:SetTextColor(unpack(C.media.pxcolor1))
-        Text:SetFont(C.media.pixel_font, C.media.pixel_font_size, C.media.pixel_font_style)
-    end
-    PP(C.datatext.Profession, Text)
-    return Stat, Text
-end
-
--- Event Handlers
-local function OnEvent(self)
-    self.text:SetText(TRADE_SKILLS) -- Tooltip holder
-    self:SetAllPoints(self.text)
-end
-
-local function OnClick(self, button)
-    local prof1, prof2, archy, fishing, cooking = GetProfessions()
-
-    if button == "LeftButton" then
-        if IsControlKeyDown() then
-            ToggleProfessionsBook()
-        elseif IsShiftKeyDown() and archy then
-            Utils.ToggleTradeSkill(select(7, GetProfessionInfo(archy)))
-        elseif prof1 then
-            Utils.ToggleTradeSkill(select(7, GetProfessionInfo(prof1)))
-        end
-    elseif button == "RightButton" then
-        if IsShiftKeyDown() and cooking then
-            Utils.ToggleTradeSkill(select(7, GetProfessionInfo(cooking)))
-        elseif IsControlKeyDown() and fishing then
-            Utils.ToggleTradeSkill(select(7, GetProfessionInfo(fishing)))
-        elseif prof2 then
-            Utils.ToggleTradeSkill(select(7, GetProfessionInfo(prof2)))
-        end
-    end
-end
-
-local function OnEnter(self)
-    local prof1, prof2, archy, fishing, cooking = GetProfessions()
-    local professions = {}
-
-    -- Cache professions
-    Utils.CacheProfession(prof1, professions)
-    Utils.CacheProfession(prof2, professions)
-    Utils.CacheProfession(archy, professions)
-    Utils.CacheProfession(fishing, professions)
-    Utils.CacheProfession(cooking, professions)
-
-    if #professions == 0 then return end
-    Utils.SortProfessions(professions)
-
-    -- Tooltip setup
-    GameTooltip:SetOwner(self, "ANCHOR_TOP", -20, 6)
-    GameTooltip:ClearLines()
-    for _, profession in ipairs(professions) do
-        GameTooltip:AddDoubleLine(
-            string.format("|T%s:12:12:1:0|t  %s", profession.texture, profession.name),
-            string.format("%d / %d", profession.rank, profession.maxRank),
-            1, 1, 1, 1, 1, 1
-        )
-    end
-
-	-- Add dynamic tooltips for LeftButton and RightButton
-	GameTooltip:AddLine(" ")
-	if prof1 then
-		GameTooltip:AddDoubleLine("Left Click:", string.format("Open %s", select(1, GetProfessionInfo(prof1))), 1, 1, 1, 1, 1, 0)
+	local function filterClick(self)
+		local value = self.__value
+		if value[3]() then
+			value[4](false)
+			self:SetBackdropBorderColor(unpack(C.media.border_color))
+		else
+			value[4](true)
+			self:SetBackdropBorderColor(1, 0.8, 0)
+		end
 	end
-	if prof2 then
-		GameTooltip:AddDoubleLine("Right Click:", string.format("Open %s", select(1, GetProfessionInfo(prof2))), 1, 1, 1, 1, 1, 0)
+
+	local buttons = {}
+	for index, value in pairs(buttonList) do
+		local button = CreateFrame("Button", nil, ProfessionsFrame.CraftingPage.RecipeList, "BackdropTemplate")
+		button:SetSize(22, 22)
+		button:SetPoint("BOTTOMRIGHT", ProfessionsFrame.CraftingPage.RecipeList.FilterButton, "TOPRIGHT", -(index-1)*27, 10)
+		button:SetTemplate("Overlay")
+		button.Icon = button:CreateTexture(nil, "OVERLAY")
+		if index == 1 then
+			button.Icon:SetAtlas(value[1])
+		else
+			button.Icon:SetTexture(value[1])
+		end
+		button.Icon:SetPoint("TOPLEFT", button, 2, -2)
+		button.Icon:SetPoint("BOTTOMRIGHT", button, -2, 2)
+
+		local tooltip_hide = function(self)
+			GameTooltip:Hide()
+			if self.overlay then
+				self.overlay:SetVertexColor(0.1, 0.1, 0.1, 1)
+			end
+		end
+
+		local tooltip_show = function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_TOPRIGHT", 0, 3)
+			GameTooltip:ClearLines()
+			GameTooltip:SetText(value[2])
+			if self.overlay then
+				self.overlay:SetVertexColor(1, 1, 1, 0.3)
+			end
+		end
+		button:SetScript("OnEnter", tooltip_show)
+		button:SetScript("OnLeave", tooltip_hide)
+
+		button.__value = value
+		button:SetScript("OnClick", filterClick)
+
+		buttons[index] = button
 	end
-	if archy then
-		GameTooltip:AddDoubleLine("Shift + Left Click:", "Open Archaeology", 1, 1, 1, 1, 1, 0)
+
+	function handler:TRADE_SKILL_LIST_UPDATE()
+		for index, value in pairs(buttonList) do
+			if value[3]() then
+				buttons[index]:SetBackdropBorderColor(1, 0.8, 0)
+			else
+				buttons[index]:SetBackdropBorderColor(unpack(C.media.border_color))
+			end
+		end
 	end
-	if cooking then
-		GameTooltip:AddDoubleLine("Shift + Right Click:", "Open Cooking", 1, 1, 1, 1, 1, 0)
-	end
-	if fishing then
-		GameTooltip:AddDoubleLine("Control + Right Click:", "Open Fishing", 1, 1, 1, 1, 1, 0)
-	end
-	GameTooltip:AddDoubleLine("Control + Left Click:", "Open Professions Book", 1, 1, 1, 1, 1, 0)
-    GameTooltip:Show()
+	handler:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
 end
 
-local function OnLeave(self)
-    GameTooltip:Hide()
+local defaults = {
+	-- Primary Professions
+	[171] = {true, false},	-- Alchemy
+	[164] = {true, false},	-- Blacksmithing
+	[333] = {true, true},	-- Enchanting
+	[202] = {true, false},	-- Engineering
+	[182] = {true, false},	-- Herbalism
+	[773] = {true, true},	-- Inscription
+	[755] = {true, true},	-- Jewelcrafting
+	[165] = {true, false},	-- Leatherworking
+	[186] = {true, false},	-- Mining
+	[393] = {true, false},	-- Skinning
+	[197] = {true, false},	-- Tailoring
+
+	-- Secondary Professions
+	[794] = {false, false},	-- Archaeology
+	[185] = {true, true},	-- Cooking
+	[356] = {true, false},	-- Fishing
+}
+
+if T.class == "DEATHKNIGHT" then spells[#spells + 1] = 53428 end	-- Runeforging
+if T.class == "ROGUE" then spells[#spells + 1] = 1804 end			-- Pick Lock
+if T.race == "LightforgedDraenei" then spells[#spells + 1] = 259930 end	-- Forge of Light
+
+local function UpdateSelectedTabs(object)
+	if not handler:IsEventRegistered("CURRENT_SPELL_CAST_CHANGED") then
+		handler:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
+	end
+
+	for index = 1, #tabs[object] do
+		local tab = tabs[object][index]
+		if tab.spellID and C_Spell.IsCurrentSpell(tab.spellID) then
+			tab:Disable()
+			tab:SetChecked(true)
+		else
+			tab:Enable()
+			tab:SetChecked(false)
+		end
+	end
 end
 
--- Main Logic
-local Stat, Text = SetupStatFrame()
-Stat:SetScript("OnEvent", OnEvent)
-Stat:SetScript("OnMouseDown", OnClick)
-Stat:SetScript("OnEnter", OnEnter)
-Stat:SetScript("OnLeave", OnLeave)
-Stat:RegisterEvent("PLAYER_ENTERING_WORLD")
-Stat:RegisterEvent("CHAT_MSG_SKILL")
-Stat:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
-Stat:RegisterEvent("TRADE_SKILL_DETAILS_UPDATE")
+local function ResetTabs(object)
+	for index = 1, #tabs[object] do
+		tabs[object][index]:Hide()
+	end
+
+	tabs[object].index = 0
+end
+
+local function UpdateTab(object, name, texture, spellID)
+	local index = tabs[object].index + 1
+	local tab = tabs[object][index] or CreateFrame("CheckButton", "ProTabs"..tabs[object].index, object, "SecureActionButtonTemplate")
+	tab:RegisterForClicks("LeftButtonUp", "LeftButtonDown")
+
+	tab:SetSize(36, 36)
+	tab:ClearAllPoints()
+
+	if not tab.icon then
+		tab.icon = tab:CreateTexture("$parentIcon")
+		tab.icon:SetAllPoints()
+
+		tab:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+		tab:GetHighlightTexture():SetBlendMode("ADD")
+		tab:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight")
+		tab:GetCheckedTexture():SetBlendMode("ADD")
+	end
+
+	if C_AddOns.IsAddOnLoaded("Aurora") then
+		tab:SetPoint("TOPLEFT", object, "TOPRIGHT", 11, (-44 * index) + 10)
+
+		local F, C = unpack(Aurora)
+		F.CreateBG(tab)
+	elseif C.skins.blizzard_frames == true then
+		tab:SetPoint("TOPLEFT", object, "TOPRIGHT", 1, (-44 * index) + 44)
+
+		tab:SetTemplate("Default")
+		tab:StyleButton()
+		tab.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+		tab.icon:ClearAllPoints()
+		tab.icon:SetPoint("TOPLEFT", 2, -2)
+		tab.icon:SetPoint("BOTTOMRIGHT", -2, 2)
+	else
+		tab:SetPoint("TOPLEFT", object, "TOPRIGHT", 0, (-44 * index) + 18)
+	end
+
+	tab.icon:SetTexture(texture)
+
+	if texture == 236571 then	-- Chef's Hat
+		tab:SetAttribute("type", "toy")
+		tab:SetAttribute("toy", 134020)
+	elseif texture == 135805 then	-- Cooking Fire
+		tab:SetAttribute("type", "macro")
+		tab:SetAttribute("macrotext", "/cast [@player]"..name)
+	else
+		tab:SetAttribute("type", "spell")
+		tab:SetAttribute("spell", spellID or name)
+	end
+
+	tab:Show()
+
+	tab.name = name
+	tab.spellID = spellID
+
+	tab:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT", 5, -7)
+		GameTooltip:SetText(name)
+		GameTooltip:Show()
+	end)
+
+	tab:SetScript("OnLeave", function()
+		GameTooltip:Hide()
+	end)
+
+	tabs[object][index] = tabs[object][index] or tab
+	tabs[object].index = tabs[object].index + 1
+end
+
+local function HandleProfession(object, professionID, hat)
+	if professionID then
+		local _, _, _, _, numAbilities, offset, skillID = GetProfessionInfo(professionID)
+
+		if defaults[skillID] then
+			for index = 1, numAbilities do
+				if defaults[skillID][index] then
+					local name = C_SpellBook.GetSpellBookItemName(offset + index, 0)
+					local texture = C_SpellBook.GetSpellBookItemTexture(offset + index, 0)
+					local spellID = C_SpellBook.GetSpellBookItemInfo(offset + index, 0).spellID
+
+					if name and texture then
+						UpdateTab(object, name, texture, spellID)
+					end
+				end
+			end
+		end
+
+		if hat and PlayerHasToy(134020) and C_ToyBox.IsToyUsable(134020) then
+			UpdateTab(object, GetSpellInfo(67556), 236571, 134020)
+		end
+	end
+end
+
+local function HandleTabs(object)
+	if not object then return end
+	tabs[object] = tabs[object] or {}
+
+	if InCombatLockdown() then
+		handler:RegisterEvent("PLAYER_REGEN_ENABLED")
+	else
+		local firstProfession, secondProfession, archaeology, fishing, cooking = GetProfessions()
+
+		ResetTabs(object)
+
+		HandleProfession(object, firstProfession)
+		HandleProfession(object, secondProfession)
+		HandleProfession(object, archaeology)
+		HandleProfession(object, fishing)
+		HandleProfession(object, cooking, true)
+
+		-- Runuforging and Pick Lock
+		for index = 1, #spells do
+			if IsSpellKnown(spells[index]) then
+				local name, _, texture = GetSpellInfo(spells[index])
+				UpdateTab(object, name, texture, spells[index])
+			end
+		end
+	end
+
+	UpdateSelectedTabs(object)
+end
+
+local isLoaded
+function handler:TRADE_SKILL_SHOW(event)
+	local owner = ATSWFrame or MRTSkillFrame or SkilletFrame or ProfessionsFrame
+
+	if C_AddOns.IsAddOnLoaded("TradeSkillDW") and owner == ProfessionsFrame then
+		self:UnregisterEvent(event)
+	else
+		HandleTabs(owner)
+		UpdateSelectedTabs(owner)
+		if not isLoaded then
+			FilterIcons()
+			isLoaded = true
+		end
+	end
+end
+
+function handler:TRADE_SKILL_CLOSE()
+	for object in next, tabs do
+		if object:IsShown() then
+			UpdateSelectedTabs(object)
+		end
+	end
+end
+
+function handler:TRADE_SHOW(event)
+	local owner = TradeFrame
+
+	HandleTabs(owner)
+	self[event] = function() UpdateSelectedTabs(owner) end
+end
+
+function handler:PLAYER_REGEN_ENABLED(event)
+	self:UnregisterEvent(event)
+
+	for object in next, tabs do HandleTabs(object) end
+end
+
+function handler:SKILL_LINES_CHANGED()
+	for object in next, tabs do HandleTabs(object) end
+end
+
+function handler:CURRENT_SPELL_CAST_CHANGED(event)
+	local numShown = 0
+
+	for object in next, tabs do
+		if object:IsShown() then
+			numShown = numShown + 1
+			UpdateSelectedTabs(object)
+		end
+	end
+
+	if numShown == 0 then self:UnregisterEvent(event) end
+end
