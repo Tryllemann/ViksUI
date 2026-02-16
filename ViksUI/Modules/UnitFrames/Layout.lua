@@ -611,7 +611,7 @@ local function Shared(self, unit)
 			}
 			self.NormalAlpha = 1
 		end
-	-- end
+	end
 
 	else
 		-- ===== DEFAULT LAYOUT (all units when Layout2 is disabled) =====
@@ -2227,3 +2227,4 @@ elseif C.raidframe.auto_position == "STATIC" then
 	end
 	frame:SetScript("OnEvent", Reposition)
 end
+
